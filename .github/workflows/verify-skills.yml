@@ -1,0 +1,69 @@
+name: Verify Skills
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Verify Skill Folders Structure
+        run: |
+          python -c "
+          import os, sys
+          skills_dir = 'skills'
+          if not os.path.exists(skills_dir):
+              print('Error: skills directory not found!')
+              sys.exit(1)
+          
+          dirs = [d for d in os.listdir(skills_dir) if os.path.isdir(os.path.join(skills_dir, d))]
+          missing = []
+          for d in dirs:
+              skill_md = os.path.join(skills_dir, d, 'SKILL.md')
+              if not os.path.exists(skill_md):
+                  missing.append(d)
+          
+          if missing:
+              print(f'Error: The following skill folders are missing SKILL.md: {missing}')
+              sys.exit(1)
+          
+          print('All skill folders contain SKILL.md. Success!')
+          "
+
+      - name: Verify No Secrets or Brand Leakage
+        run: |
+          python -c "
+          import os, sys
+          banned = ['ECC', 'Everything Claude Code', 'Claude Code', 'NeuraCerebra']
+          found_leak = False
+          
+          for root, dirs, files in os.walk('.'):
+              if '.git' in root or '.github' in root:
+                  continue
+              for file in files:
+                  filepath = os.path.join(root, file)
+                  try:
+                      with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                          content = f.read()
+                      for word in banned:
+                          if word in content:
+                              print(f'Error: Forbidden brand word \"{word}\" found in {filepath}')
+                              found_leak = True
+                  except Exception as e:
+                      pass
+                      
+          if found_leak:
+              sys.exit(1)
+          print('No forbidden keywords detected. Sanitization check passed!')
+          "
