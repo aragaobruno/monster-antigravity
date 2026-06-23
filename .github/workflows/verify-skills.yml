@@ -45,7 +45,7 @@ jobs:
         run: |
           python -c "
           import os, sys
-          banned = ['ECC', 'Everything Claude Code', 'Claude Code', 'NeuraCerebra']
+          banned = ['ecc', 'everything claude code', 'claude code', 'neuracerebra']
           found_leak = False
           
           for root, dirs, files in os.walk('.'):
@@ -55,10 +55,10 @@ jobs:
                   filepath = os.path.join(root, file)
                   try:
                       with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
-                          content = f.read()
+                          content = f.read().lower()
                       for word in banned:
                           if word in content:
-                              print(f'Error: Forbidden brand word \"{word}\" found in {filepath}')
+                              print(f'Error: Forbidden brand word \"{word}\" found (case-insensitive) in {filepath}')
                               found_leak = True
                   except Exception as e:
                       pass
